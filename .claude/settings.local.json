@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"..\\venv\\Scripts\\python.exe\" test_regenerate.py)",
+      "Bash(Select-Object -Last 30)",
+      "Bash(\"..\\venv\\Scripts\\python.exe\" test_video_variety.py)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

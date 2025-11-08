@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Professional Green Theme */
+:root {
+  --background: #18230F;
+  --foreground: #ffffff;
+  --card-bg: #27391C;
+  --card-hover: #255F38;
+  --border: #1F7D53;
+  --neon-green: #1F7D53;
+  --neon-green-light: #255F38;
+  --grey-light: #a3a3a3;
+  --grey-dark: #525252;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Green glow effects - subtle and professional */
+.neon-glow {
+  box-shadow: 0 0 5px rgba(31, 125, 83, 0.15), 0 0 10px rgba(31, 125, 83, 0.1);
+}
+
+.neon-text {
+  text-shadow: 0 0 5px rgba(31, 125, 83, 0.2), 0 0 10px rgba(31, 125, 83, 0.1);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--grey-dark);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-green);
+}
+
+/* Card animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Button hover effects - subtle */
+.btn-neon {
+  transition: all 0.3s ease;
+}
+
+.btn-neon:hover {
+  box-shadow: 0 0 8px rgba(31, 125, 83, 0.2), 0 0 15px rgba(31, 125, 83, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Input focus effects - subtle */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--neon-green);
+  box-shadow: 0 0 5px rgba(31, 125, 83, 0.15);
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(26, 26, 26, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

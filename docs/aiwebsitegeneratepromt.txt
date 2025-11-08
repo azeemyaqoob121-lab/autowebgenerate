@@ -1,0 +1,212 @@
+You are a senior UI/UX developer and creative web designer. 
+Generate complete HTML5 website template for the following business:
+
+BUSINESS DETAILS:
+- Business Name: [BUSINESS_NAME]
+- Industry / Category: [INDUSTRY]
+- Location: [LOCATION]
+- Contact: [PHONE], [EMAIL]
+- Address: [FULL_ADDRESS]
+- Description / Services: [BUSINESS_DESCRIPTION]
+- Current Website Problems: [PROBLEM_LIST]
+
+🎨 DESIGN GOAL:
+Create a **modern, premium-quality, professional website** that looks like it cost over $100,000 to design — responsive, animated, and visually stunning.  
+Use design principles similar to Apple, Notion, and Stripe websites — smooth motion, elegance, minimalism, and storytelling flow.
+
+🔧 TECHNICAL & VISUAL REQUIREMENTS:
+- Produce ONE single HTML5 file (from `<!DOCTYPE html>` to `</html>`).
+- All CSS must be inside `<style>` tags in the `<head>`.
+- All JavaScript must be inside `<script>` tags at the end of `<body>`.
+- Use **semantic HTML5 structure** with comments explaining each section.
+- Use **Poppins** for headlines, **Inter** for body text, **Playfair Display** for accents.
+- Include fallback fonts in case Google Fonts cannot load.
+
+⚡ PERFORMANCE:
+- Lazy-load all images using `<img loading="lazy">`
+- Use `will-change` for animations.
+- Use lightweight vanilla JS (no frameworks).
+- Use CSS variables for colors.
+- Optimize animations for 60fps using requestAnimationFrame.
+
+📱 RESPONSIVE DESIGN:
+- Mobile-first layout that adapts perfectly to all screen sizes.
+- Smooth mobile menu animation (hamburger → overlay).
+- Touch-friendly buttons and links.
+
+💫 VISUAL ELEMENTS:
+- **Hero Section:** Full-screen hero with gradient/particle background and parallax image or video layer.
+- **Icons:** Use inline SVG icons or emoji-style placeholders that match the business type (e.g. wrench for repair, chef hat for restaurant).
+- **Images:** Use `<picture>` with sample placeholder images that visually represent the business. Add comment placeholders for replacement.
+- **Animations:** Use CSS + JavaScript for:
+  - Floating shapes or particles in hero
+  - Scroll-triggered fade/slide animations
+  - Hover transformations (e.g. 3D tilt)
+  - Animated gradient text on hero titles
+- **Custom Cursor:** Add optional custom cursor for desktop.
+
+🧩 CONTENT STRUCTURE:
+1. **Navigation (Glassmorphism style)** — semi-transparent, blurred, sticky on scroll.
+2. **Hero Section** — business headline, short tagline, main CTA buttons (Call / Contact / Get Quote).
+3. **About / Services Section** — highlight services with animated SVG icons.
+4. **Why Choose Us** — 3D tilt cards showing features/advantages.
+5. **Statistics Section** — animated counters (JS count-up on scroll).
+6. **Testimonials** — auto-rotating carousel (JS only, accessible).
+7. **Contact Section** — form with real-time validation, success/error states, and clickable phone/email links.
+8. **Footer** — social icons, address, copyright.
+
+🎯 CONVERSION OPTIMIZATION:
+- Prominent CTAs (“Get Free Quote”, “Call Now”)
+- Trust elements (stars, badges, client logos)
+- Testimonials as social proof
+- Urgency cues (“Limited Slots”, “Book Today”)
+
+🔍 SEO & META:
+- Proper `<title>`, `<meta name="description">`
+- Open Graph and Twitter meta tags (placeholders)
+- Schema.org JSON-LD for LocalBusiness
+
+🌈 STYLE:
+- Light + subtle gradient background
+- Soft shadows, glassmorphism layers
+- Smooth fade-in + parallax motion
+- Color scheme should match the business category automatically 
+- Include subtle Lottie-like icon animations (CSS or JS).
+
+🧠 INTERACTION:
+- Scroll-triggered animations using IntersectionObserver.
+- Tilt effect on cards using mouse position (desktop) and soft tap movement (mobile).
+- Form validation (HTML + JS) — show green/red states.
+- Animated loading overlay on page load (brief and smooth).
+
+🚀 OUTPUT:
+- Generate one clean, production-ready HTML file.
+- Add comments in the code showing where to replace:
+  - Fonts
+  - Images
+  - Analytics
+  - Form endpoints
+- The file must be **copy-paste runnable** in a browser with all effects working locally.
+
+📝 AT END OF HTML:
+Add developer notes (inside HTML comments):
+- Where to replace images, fonts, analytics, and endpoint URLs.
+- Where to tune animation intensity for mobile.
+- Accessibility considerations (keyboard nav, ARIA).
+- Performance tips (reduce particle count, etc.)
+
+Now generate the **complete HTML5 file** with:
+- Stunning visuals,
+- Animated icons and images,
+- Smooth transitions,
+- Fully responsive design,
+- Interactive elements,
+- SEO-friendly structure,
+- And realistic business information inserted dynamically based on provided data.
+
+
+You are a senior UI/UX developer and creative web designer. 
+Generate a **single complete HTML5 website template** for the following business:
+
+BUSINESS DETAILS:
+- Business Name: [BUSINESS_NAME]
+- Industry / Category: [INDUSTRY]
+- Location: [LOCATION]
+- Contact: [PHONE], [EMAIL]
+- Address: [FULL_ADDRESS]
+- Description / Services: [BUSINESS_DESCRIPTION]
+- Current Website Problems: [PROBLEM_LIST]
+
+🎨 DESIGN GOAL:
+Create a **modern, premium-quality, professional website** that looks like it cost over $100,000 to design — responsive, animated, and visually stunning.  
+Use design principles similar to Apple, Notion, and Stripe websites — smooth motion, elegance, minimalism, and storytelling flow.
+
+🔧 TECHNICAL & VISUAL REQUIREMENTS:
+- Produce ONE single HTML5 file (from `<!DOCTYPE html>` to `</html>`).
+- All CSS must be inside `<style>` tags in the `<head>`.
+- All JavaScript must be inside `<script>` tags at the end of `<body>`.
+- Use **semantic HTML5 structure** with comments explaining each section.
+- Use **Poppins** for headlines, **Inter** for body text, **Playfair Display** for accents.
+- Include fallback fonts in case Google Fonts cannot load.
+
+⚡ PERFORMANCE:
+- Lazy-load all images using `<img loading="lazy">`
+- Use `will-change` for animations.
+- Use lightweight vanilla JS (no frameworks).
+- Use CSS variables for colors.
+- Optimize animations for 60fps using requestAnimationFrame.
+
+📱 RESPONSIVE DESIGN:
+- Mobile-first layout that adapts perfectly to all screen sizes.
+- Smooth mobile menu animation (hamburger → overlay).
+- Touch-friendly buttons and links.
+
+💫 VISUAL ELEMENTS:
+- **Hero Section:** Full-screen hero with gradient/particle background and parallax image or video layer.
+- **Icons:** Use inline SVG icons or emoji-style placeholders that match the business type (e.g. wrench for repair, chef hat for restaurant).
+- **Images:** Use `<picture>` with sample placeholder images that visually represent the business. Add comment placeholders for replacement.
+- **Animations:** Use CSS + JavaScript for:
+  - Floating shapes or particles in hero
+  - Scroll-triggered fade/slide animations
+  - Hover transformations (e.g. 3D tilt)
+  - Animated gradient text on hero titles
+- **Custom Cursor:** Add optional custom cursor for desktop.
+
+🧩 CONTENT STRUCTURE:
+1. **Navigation (Glassmorphism style)** — semi-transparent, blurred, sticky on scroll.
+2. **Hero Section** — business headline, short tagline, main CTA buttons (Call / Contact / Get Quote).
+3. **About / Services Section** — highlight services with animated SVG icons.
+4. **Why Choose Us** — 3D tilt cards showing features/advantages.
+5. **Statistics Section** — animated counters (JS count-up on scroll).
+6. **Testimonials** — auto-rotating carousel (JS only, accessible).
+7. **Contact Section** — form with real-time validation, success/error states, and clickable phone/email links.
+8. **Footer** — social icons, address, copyright.
+
+🎯 CONVERSION OPTIMIZATION:
+- Prominent CTAs (“Get Free Quote”, “Call Now”)
+- Trust elements (stars, badges, client logos)
+- Testimonials as social proof
+- Urgency cues (“Limited Slots”, “Book Today”)
+
+🔍 SEO & META:
+- Proper `<title>`, `<meta name="description">`
+- Open Graph and Twitter meta tags (placeholders)
+- Schema.org JSON-LD for LocalBusiness
+
+🌈 STYLE:
+- Light + subtle gradient background
+- Soft shadows, glassmorphism layers
+- Smooth fade-in + parallax motion
+- Color scheme should match the business category automatically (e.g., green for eco brands, blue for tech, red/orange for restaurants)
+- Include subtle Lottie-like icon animations (CSS or JS).
+
+🧠 INTERACTION:
+- Scroll-triggered animations using IntersectionObserver.
+- Tilt effect on cards using mouse position (desktop) and soft tap movement (mobile).
+- Form validation (HTML + JS) — show green/red states.
+- Animated loading overlay on page load (brief and smooth).
+
+🚀 OUTPUT:
+- Generate one clean, production-ready HTML file.
+- Add comments in the code showing where to replace:
+  - Fonts
+  - Images
+  - Analytics
+  - Form endpoints
+- The file must be **copy-paste runnable** in a browser with all effects working locally.
+
+📝 AT END OF HTML:
+Add developer notes (inside HTML comments):
+- Where to replace images, fonts, analytics, and endpoint URLs.
+- Where to tune animation intensity for mobile.
+- Accessibility considerations (keyboard nav, ARIA).
+- Performance tips (reduce particle count, etc.)
+
+Now generate the **complete HTML5 file** with:
+- Stunning visuals,
+- Animated icons and images,
+- Smooth transitions,
+- Fully responsive design,
+- Interactive elements,
+- SEO-friendly structure,
+- And realistic business information inserted dynamically based on provided data.
