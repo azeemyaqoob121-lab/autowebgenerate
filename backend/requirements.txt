@@ -15,6 +15,7 @@ pydantic-settings==2.1.0
 # Authentication
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+argon2-cffi==25.1.0
 
 # Redis and Task Queue
 redis==5.0.1

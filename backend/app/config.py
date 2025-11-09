@@ -150,9 +150,12 @@ settings = Settings()
 # Configure logging on module import
 settings.configure_logging()
 
-# Debug: Print API key on startup
+# Safe logging of configuration status (NO SECRETS)
 import logging
 logger = logging.getLogger(__name__)
-logger.info(f"[CONFIG] GOOGLE_API_KEY loaded: {settings.GOOGLE_API_KEY[:30] if settings.GOOGLE_API_KEY else 'None'}...")
-
-# Force reload timestamp: 2025-11-04 22:10
+logger.info(f"[CONFIG] Environment: {settings.ENVIRONMENT}")
+logger.info(f"[CONFIG] Debug mode: {settings.DEBUG}")
+logger.info(f"[CONFIG] OpenAI API Key: {settings.mask_secret(settings.OPENAI_API_KEY)}")
+logger.info(f"[CONFIG] Google API Key: {settings.mask_secret(settings.GOOGLE_API_KEY)}")
+logger.info(f"[CONFIG] Unsplash API Key: {settings.mask_secret(settings.UNSPLASH_API_KEY)}")
+logger.info(f"[CONFIG] Pexels API Key: {settings.mask_secret(settings.PEXELS_API_KEY)}")
