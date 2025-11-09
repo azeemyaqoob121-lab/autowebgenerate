@@ -3,7 +3,25 @@
     "allow": [
       "Bash(\"..\\venv\\Scripts\\python.exe\" test_regenerate.py)",
       "Bash(Select-Object -Last 30)",
-      "Bash(\"..\\venv\\Scripts\\python.exe\" test_video_variety.py)"
+      "Bash(\"..\\venv\\Scripts\\python.exe\" test_video_variety.py)",
+      "Bash(dir:*)",
+      "Bash(nul)",
+      "Bash(rd /s /q .next 2)",
+      "Bash(npm run build:*)",
+      "Bash(powershell -Command \"if (Test-Path .next) { Remove-Item -Recurse -Force .next; Write-Host ''Cleaned'' } else { Write-Host ''Already clean'' }\")",
+      "Bash(findstr:*)",
+      "Bash(py:*)",
+      "Bash(python -m venv:*)",
+      "Bash(venv/Scripts/pip.exe install:*)",
+      "Bash(.gitignore)",
+      "Bash(git add:*)",
+      "Bash(.env)",
+      "Bash(git check-ignore:*)",
+      "Bash(del .env)",
+      "Bash(git commit:*)",
+      "Bash(\"..\\venv\\Scripts\\pip.exe\" install:*)",
+      "Bash(venv/Scripts/pip.exe:*)",
+      "Bash(venv/Scripts/python.exe:*)"
     ],
     "deny": [],
     "ask": []

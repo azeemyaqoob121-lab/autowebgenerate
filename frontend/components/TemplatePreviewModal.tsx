@@ -90,7 +90,6 @@ export default function TemplatePreviewModal({
         </head>
         <body>
           ${selectedTemplate.html_content || '<p>No template content available</p>'}
-          ${selectedTemplate.js_content ? `<script>${selectedTemplate.js_content}</script>` : ''}
         </body>
         </html>
       `;
