@@ -131,6 +131,23 @@ class Settings(BaseSettings):
         else:
             return ["http://localhost:3000", "http://localhost:3001"]
 
+    def mask_secret(self, secret: Optional[str], show_chars: int = 4) -> str:
+        """
+        Mask sensitive values for safe logging.
+
+        Args:
+            secret: The secret value to mask
+            show_chars: Number of characters to show at the end
+
+        Returns:
+            Masked string like "****abc123" or "Not configured"
+        """
+        if not secret:
+            return "Not configured"
+        if len(secret) <= show_chars:
+            return "*" * len(secret)
+        return "*" * (len(secret) - show_chars) + secret[-show_chars:]
+
     def configure_logging(self) -> None:
         """Configure application logging based on settings"""
         logging.basicConfig(
