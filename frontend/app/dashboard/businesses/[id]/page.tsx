@@ -19,6 +19,7 @@ export default function BusinessDetailPage() {
   const [evaluating, setEvaluating] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [fullscreenTemplate, setFullscreenTemplate] = useState<number | null>(null);
 
   useEffect(() => {
     if (businessId) {
@@ -114,6 +115,12 @@ export default function BusinessDetailPage() {
     if (score < 70) return 'text-red-500';
     if (score < 85) return 'text-yellow-500';
     return 'text-green-500';
+  };
+
+  const openTemplateInNewTab = (template: Template) => {
+    const blob = new Blob([template.html_content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   };
 
   if (loading) {
@@ -439,15 +446,40 @@ export default function BusinessDetailPage() {
 
                       {/* Template Preview */}
                       <div className="p-4">
-                        <div className="bg-gray-100 rounded border border-gray-300 overflow-hidden">
+                        <div className="bg-gray-100 rounded border border-gray-300 overflow-hidden relative">
                           <iframe
                             srcDoc={template.html_content}
-                            className="w-full h-96 bg-white"
+                            className="w-full bg-white"
+                            style={{ height: fullscreenTemplate === index ? '90vh' : '600px' }}
                             title={`Template ${template.variant_number}`}
-                            sandbox="allow-same-origin"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                           />
+                          <button
+                            onClick={() => setFullscreenTemplate(fullscreenTemplate === index ? null : index)}
+                            className="absolute top-2 right-2 p-2 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors"
+                            title={fullscreenTemplate === index ? "Exit fullscreen" : "Enter fullscreen"}
+                          >
+                            {fullscreenTemplate === index ? (
+                              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+                              </svg>
+                            ) : (
+                              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                              </svg>
+                            )}
+                          </button>
                         </div>
                         <div className="mt-3 flex gap-2">
+                          <button
+                            onClick={() => openTemplateInNewTab(template)}
+                            className="px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Open in Browser
+                          </button>
                           <a
                             href={`data:text/html;charset=utf-8,${encodeURIComponent(
                               template.html_content

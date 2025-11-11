@@ -321,7 +321,7 @@ function BusinessesContent() {
                     handleDiscoverBusinesses();
                   }
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
               />
             </div>
 
@@ -340,7 +340,7 @@ function BusinessesContent() {
                     handleDiscoverBusinesses();
                   }
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
               />
             </div>
 
@@ -434,11 +434,7 @@ function BusinessesContent() {
 
       {/* Discovery Stats */}
       {discoveryStats && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4"
-        >
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">✅</span>
             <h3 className="text-lg font-semibold text-green-800">Discovery Complete!</h3>
@@ -461,7 +457,7 @@ function BusinessesContent() {
               <p className="text-2xl font-bold text-purple-600">{discoveryStats.templates_generated}</p>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Search Section */}
@@ -483,7 +479,7 @@ function BusinessesContent() {
                   handleDiscoverBusinesses();
                 }
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-gray-900 bg-white"
             />
           </div>
 
@@ -503,7 +499,7 @@ function BusinessesContent() {
                   handleDiscoverBusinesses();
                 }
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-gray-900 bg-white"
             />
           </div>
 
@@ -591,22 +587,11 @@ function BusinessesContent() {
       </div>
 
       {/* Business Card Grid */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          visible: {
-            transition: {
-              staggerChildren: 0.05,
-            },
-          },
-        }}
-      >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {businesses.map((business) => (
           <BusinessCard key={business.id} business={business} />
         ))}
-      </motion.div>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
