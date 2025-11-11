@@ -1,0 +1,36 @@
+[Unit]
+Description=AutoWeb Outreach AI Backend (FastAPI)
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/AutoWeb_Outreach_AI/backend
+Environment="PATH=/var/www/AutoWeb_Outreach_AI/backend/venv/bin"
+
+# Load environment variables from .env file
+EnvironmentFile=/var/www/AutoWeb_Outreach_AI/backend/.env
+
+# Start the FastAPI application with uvicorn
+ExecStart=/var/www/AutoWeb_Outreach_AI/backend/venv/bin/uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 4 \
+    --log-level info
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=append:/var/log/autoweb/backend.log
+StandardError=append:/var/log/autoweb/backend-error.log
+
+[Install]
+WantedBy=multi-user.target

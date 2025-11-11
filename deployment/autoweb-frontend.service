@@ -1,0 +1,29 @@
+[Unit]
+Description=AutoWeb Outreach AI Frontend (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/AutoWeb_Outreach_AI/frontend
+Environment="PATH=/usr/bin:/usr/local/bin"
+Environment="NODE_ENV=production"
+
+# Start Next.js in production mode
+ExecStart=/usr/bin/npm start
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=append:/var/log/autoweb/frontend.log
+StandardError=append:/var/log/autoweb/frontend-error.log
+
+[Install]
+WantedBy=multi-user.target
