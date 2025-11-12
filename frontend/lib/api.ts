@@ -152,7 +152,7 @@ class APIClient {
 
   async discoverBusinesses(data: BusinessDiscoveryRequest): Promise<BusinessDiscoveryResponse> {
     const response = await this.client.post<BusinessDiscoveryResponse>('/api/businesses/discover', data, {
-      timeout: 900000, // 15 minutes for discovery + evaluation of up to 20 businesses (30-60 seconds each)
+      timeout: 900000, // 15 minutes for discovery + evaluation + AI template generation
     });
     return response.data;
   }

@@ -120,6 +120,7 @@ docker-compose.override.yml
 # OS
 Thumbs.db
 .DS_Store
+nul
 
 # Additional Security - Prevent accidental secret commits
 *.backup

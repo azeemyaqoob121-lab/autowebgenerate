@@ -102,83 +102,111 @@ function BusinessesContent() {
         location: locationFilter.trim(),
         category: categoryFilter.trim(),
         max_results: 10, // Search businesses and keep those with score < 70
-        auto_evaluate: true,
+        auto_evaluate: true, // Automatically evaluate and generate templates
       });
 
       console.log('Discovery response:', response);
 
       setDiscoveryStats(response);
 
-      // Set the businesses directly from discovery response
-      setBusinesses(response.businesses);
-      setTotal(response.businesses.length);
-
-      setAppliedLocation(locationFilter);
-      setAppliedCategory(categoryFilter);
-      setCurrentPage(1);
-    } catch (err: any) {
-      console.error('Failed to discover businesses:', err);
-
-      // Even if the request times out, the data might have been saved
-      // So we refetch the businesses list to show any newly discovered data
-      console.log('Discovery request failed/timeout, refetching businesses...');
-
-      // Show a user-friendly message
-      setError('⏳ Discovery is taking longer than expected. Your businesses are being saved. Results will appear automatically in 10-25 seconds...');
-
-      // Poll for businesses every 3 seconds until we find some (max 5 attempts = 15 seconds)
-      let attempts = 0;
-      const maxAttempts = 5;
-
-      const pollForBusinesses = async () => {
-        attempts++;
-        console.log(`Polling attempt ${attempts}/${maxAttempts}...`);
-        setPolling(true);
-        setError(`🔄 Loading businesses... (attempt ${attempts}/${maxAttempts})`);
+      // ALWAYS fetch from database after discovery to ensure we get ALL saved businesses
+      // The discovery response may be filtered, but database has all businesses
+      if (response.saved > 0) {
+        console.log(`Discovery saved ${response.saved} businesses, fetching all from database...`);
 
         try {
           const params: any = {
             limit: ITEMS_PER_PAGE,
             offset: 0,
-            score_max: 69, // Only show businesses with score < 70 (qualified leads!)
             location: locationFilter.trim(),
             category: categoryFilter.trim(),
           };
 
-          const response: PaginatedBusinessResponse = await api.getBusinesses(params);
-
-          if (response.items.length > 0) {
-            console.log(`Found ${response.items.length} businesses!`);
-            setBusinesses(response.items);
-            setTotal(response.total);
-            setAppliedLocation(locationFilter);
-            setAppliedCategory(categoryFilter);
-            setCurrentPage(1);
-            setError(''); // Clear error on success
-            setPolling(false);
-          } else if (attempts < maxAttempts) {
-            console.log('No businesses found yet, will retry...');
-            setTimeout(pollForBusinesses, 3000); // Try again in 3 seconds
-          } else {
-            console.log('Max attempts reached, no businesses found');
-            setError('Discovery completed but no businesses were found. Try a different search.');
-            setPolling(false);
-          }
-        } catch (pollErr) {
-          console.error('Error polling for businesses:', pollErr);
-          if (attempts < maxAttempts) {
-            setTimeout(pollForBusinesses, 3000);
-          } else {
-            setError('Unable to load businesses. Please try refreshing the page.');
-            setPolling(false);
-          }
+          const fetchedResponse = await api.getBusinesses(params);
+          console.log(`Fetched ${fetchedResponse.items.length} businesses from database`);
+          setBusinesses(fetchedResponse.items);
+          setTotal(fetchedResponse.total);
+        } catch (fetchErr) {
+          console.error('Failed to fetch businesses after discovery:', fetchErr);
+          // Fallback to discovery response if database fetch fails
+          setBusinesses(response.businesses || []);
+          setTotal(response.businesses?.length || 0);
         }
-      };
+      } else {
+        // No businesses were saved (all had score >= 70 or discovery failed)
+        console.log('No businesses saved from discovery');
+        setBusinesses([]);
+        setTotal(0);
+      }
 
-      // Start polling after 10 seconds (give backend time to save)
-      setTimeout(pollForBusinesses, 10000);
-    } finally {
+      setAppliedLocation(locationFilter);
+      setAppliedCategory(categoryFilter);
+      setCurrentPage(1);
+
+      // Turn off discovering and polling flags on success
       setDiscovering(false);
+      setPolling(false);
+      setError(''); // Clear any previous errors
+    } catch (err: any) {
+      console.error('Failed to discover businesses:', err);
+
+      // If timeout, the backend is still processing - poll for results
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        console.log('Request timeout - backend is still processing, will poll for results');
+
+        // Poll for businesses every 5 seconds
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        const pollForBusinesses = async () => {
+          attempts++;
+          console.log(`Checking for businesses... (${attempts}/${maxAttempts})`);
+          setPolling(true);
+
+          try {
+            const params: any = {
+              limit: ITEMS_PER_PAGE,
+              offset: 0,
+              location: locationFilter.trim(),
+              category: categoryFilter.trim(),
+            };
+
+            const response: PaginatedBusinessResponse = await api.getBusinesses(params);
+
+            if (response.items.length > 0) {
+              console.log(`Found ${response.items.length} businesses!`);
+              setBusinesses(response.items);
+              setTotal(response.total);
+              setAppliedLocation(locationFilter);
+              setAppliedCategory(categoryFilter);
+              setCurrentPage(1);
+              setError(''); // Clear any errors
+              setPolling(false);
+              setDiscovering(false);
+            } else if (attempts < maxAttempts) {
+              setTimeout(pollForBusinesses, 5000);
+            } else {
+              setError('No businesses found. Try different search terms.');
+              setPolling(false);
+              setDiscovering(false);
+            }
+          } catch (pollErr) {
+            console.error('Error checking for businesses:', pollErr);
+            if (attempts < maxAttempts) {
+              setTimeout(pollForBusinesses, 5000);
+            } else {
+              setError('Unable to fetch businesses. Please try again.');
+              setPolling(false);
+              setDiscovering(false);
+            }
+          }
+        };
+
+        setTimeout(pollForBusinesses, 5000);
+      } else {
+        setError('Failed to discover businesses. Please try again.');
+        setDiscovering(false);
+      }
     }
   };
 

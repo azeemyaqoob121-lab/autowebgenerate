@@ -19,7 +19,8 @@ from app.schemas.business import (
 from app.services import business_service
 from app.services.places_service import get_places_service
 from app.services.evaluation_service import try_auto_evaluate
-from app.services.template_generator import generate_templates_for_business
+# SWITCHED TO PREMIUM TEMPLATE GENERATOR FOR PROFESSIONAL QUALITY DURING AUTO-DISCOVERY
+from app.services.template_generator_premium import generate_templates_for_business
 from app.utils.security import get_current_user
 from app.utils.logging_config import get_logger
 
