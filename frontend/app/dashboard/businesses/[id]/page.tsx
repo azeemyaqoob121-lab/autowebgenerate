@@ -160,14 +160,14 @@ export default function BusinessDetailPage() {
       </nav>
 
       {/* Business Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-start justify-between">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               {business.name}
             </h1>
             {business.category && (
-              <p className="text-lg text-gray-600">{business.category}</p>
+              <p className="text-base sm:text-lg text-gray-600">{business.category}</p>
             )}
             {business.location && (
               <p className="text-sm text-gray-500 mt-1">📍 {business.location}</p>
@@ -176,13 +176,13 @@ export default function BusinessDetailPage() {
 
           {/* Score Badge */}
           {business.score !== null && (
-            <div className="text-center">
+            <div className="text-center sm:text-right">
               <div
-                className={`text-6xl font-bold ${getScoreColor(business.score)}`}
+                className={`text-4xl sm:text-5xl md:text-6xl font-bold ${getScoreColor(business.score)}`}
               >
                 {Math.round(business.score)}
               </div>
-              <div className="text-sm text-gray-500 mt-1">Quality Score</div>
+              <div className="text-xs sm:text-sm text-gray-500 mt-1">Quality Score</div>
             </div>
           )}
         </div>
@@ -194,11 +194,11 @@ export default function BusinessDetailPage() {
       </div>
 
       {/* Contact Information */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
           Contact Information
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {business.email && (
             <div>
               <div className="text-sm text-gray-500 mb-1">Email</div>

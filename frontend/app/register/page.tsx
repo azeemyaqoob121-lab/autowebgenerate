@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -13,6 +13,11 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Prefetch dashboard route on mount for faster navigation
+  useEffect(() => {
+    router.prefetch('/dashboard');
+  }, [router]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,9 +38,11 @@ export default function RegisterPage() {
 
     try {
       await api.register({ email, password, password_confirm: confirmPassword });
-      router.push('/dashboard');
+      // Use window.location for instant redirect instead of router.push
+      window.location.href = '/dashboard';
     } catch (err: any) {
       console.error('Registration error:', err);
+      setLoading(false); // Only reset loading on error
       if (err.response?.data?.error) {
         setError(err.response.data.error.message);
       } else if (err.message) {
@@ -43,9 +50,8 @@ export default function RegisterPage() {
       } else {
         setError('Failed to create account. Please try again.');
       }
-    } finally {
-      setLoading(false);
     }
+    // Don't set loading to false on success - let the redirect happen
   };
 
   return (
