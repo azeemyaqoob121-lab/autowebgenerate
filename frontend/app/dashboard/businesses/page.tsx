@@ -109,38 +109,16 @@ function BusinessesContent() {
 
       setDiscoveryStats(response);
 
-      // ALWAYS fetch from database after discovery to ensure we get ALL saved businesses
-      // The discovery response may be filtered, but database has all businesses
-      if (response.saved > 0) {
-        console.log(`Discovery saved ${response.saved} businesses, fetching all from database...`);
+      // Show ONLY the newly discovered businesses with score < 70 from this search
+      // Don't show all businesses from the database - just the ones we just found
+      console.log(`Discovery found ${response.businesses.length} businesses with score < 70 from this search`);
 
-        try {
-          const params: any = {
-            limit: ITEMS_PER_PAGE,
-            offset: 0,
-            location: locationFilter.trim(),
-            category: categoryFilter.trim(),
-          };
+      setBusinesses(response.businesses || []);
+      setTotal(response.businesses?.length || 0);
 
-          const fetchedResponse = await api.getBusinesses(params);
-          console.log(`Fetched ${fetchedResponse.items.length} businesses from database`);
-          setBusinesses(fetchedResponse.items);
-          setTotal(fetchedResponse.total);
-        } catch (fetchErr) {
-          console.error('Failed to fetch businesses after discovery:', fetchErr);
-          // Fallback to discovery response if database fetch fails
-          setBusinesses(response.businesses || []);
-          setTotal(response.businesses?.length || 0);
-        }
-      } else {
-        // No businesses were saved (all had score >= 70 or discovery failed)
-        console.log('No businesses saved from discovery');
-        setBusinesses([]);
-        setTotal(0);
-      }
-
-      setAppliedLocation(locationFilter);
-      setAppliedCategory(categoryFilter);
+      // Clear the applied filters since we're now showing all qualified leads (not filtered by location/category)
+      setAppliedLocation('');
+      setAppliedCategory('');
       setCurrentPage(1);
 
       // Turn off discovering and polling flags on success
