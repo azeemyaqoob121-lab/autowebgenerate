@@ -174,8 +174,8 @@ class MediaSourcingService:
 
         logger.info(
             f"MediaSourcingService initialized "
-            f"(Unsplash: {'✓' if unsplash_key else '✗'}, "
-            f"Pexels: {'✓' if pexels_key else '✗'})"
+            f"(Unsplash: {'OK' if unsplash_key else 'FAIL'}, "
+            f"Pexels: {'OK' if pexels_key else 'FAIL'})"
         )
 
     async def get_business_images(
@@ -340,7 +340,7 @@ class MediaSourcingService:
                     )
 
                     if video:
-                        logger.info(f"✓ Selected hero video for keyword: '{keyword}'")
+                        logger.info(f"[SUCCESS] Selected hero video for keyword: '{keyword}'")
                         return video
 
                 except Exception as e:
@@ -433,7 +433,7 @@ class MediaSourcingService:
                 if suitable_videos:
                     selected = random.choice(suitable_videos)
                     logger.info(
-                        f"✓ Selected random video from {len(suitable_videos)} options "
+                        f"[SUCCESS] Selected random video from {len(suitable_videos)} options "
                         f"for query '{query}'"
                     )
                     return VideoAsset(
@@ -560,21 +560,21 @@ class MediaSourcingService:
         if self.unsplash_key:
             try:
                 images = await self._fetch_unsplash_images("test", count=1)
-                results["unsplash"] = "✓ Connected" if images else "✗ Failed"
+                results["unsplash"] = "OK Connected" if images else "FAIL Failed"
             except Exception as e:
-                results["unsplash"] = f"✗ Error: {str(e)}"
+                results["unsplash"] = f"FAIL Error: {str(e)}"
         else:
-            results["unsplash"] = "✗ No API key"
+            results["unsplash"] = "FAIL No API key"
 
         # Test Pexels
         if self.pexels_key:
             try:
                 video = await self._fetch_pexels_video("business", min_duration=5)
-                results["pexels"] = "✓ Connected" if video else "✗ Failed"
+                results["pexels"] = "OK Connected" if video else "FAIL Failed"
             except Exception as e:
-                results["pexels"] = f"✗ Error: {str(e)}"
+                results["pexels"] = f"FAIL Error: {str(e)}"
         else:
-            results["pexels"] = "✗ No API key"
+            results["pexels"] = "FAIL No API key"
 
         return results
 

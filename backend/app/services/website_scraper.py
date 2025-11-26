@@ -16,6 +16,56 @@ from app.utils.logging_config import get_logger
 logger = get_logger(__name__)
 
 
+def validate_scraped_html(html: str, url: str) -> bool:
+    """
+    Validate that scraped HTML is clean and usable.
+
+    IMPORTANT: This validation is now LESS STRICT to avoid false positives.
+    Modern websites often have binary data in SVGs, data URIs, and other embedded content.
+    We only reject HTML if it's COMPLETELY corrupted (no structure or starts with garbage).
+
+    Checks for:
+    - Minimum length requirement
+    - Basic HTML structure present
+    - Not starting with binary garbage (first 100 chars should be mostly printable)
+
+    Args:
+        html: HTML string to validate
+        url: URL that was scraped (for logging)
+
+    Returns:
+        True if valid, False if completely corrupted or invalid
+    """
+    if not html or len(html) < 100:
+        logger.error(f"[VALIDATION FAILED] HTML too short or empty for {url}")
+        return False
+
+    # Check for basic HTML structure first
+    html_lower = html.lower()
+    has_html_tag = '<html' in html_lower or '<!doctype' in html_lower
+    has_body_tag = '<body' in html_lower or '<div' in html_lower  # Allow div-only pages
+
+    if not (has_html_tag or has_body_tag):
+        logger.error(f"[VALIDATION FAILED] Missing basic HTML structure tags for {url}")
+        return False
+
+    # LESS STRICT: Only check if HTML STARTS with binary garbage (first 100 chars)
+    # Modern websites often have binary data embedded in SVGs, data URIs, etc.
+    # We only reject if the HTML is completely corrupted (no readable text at start)
+    first_100 = html[:100].strip()
+
+    # Count printable characters in first 100 chars
+    printable_count = sum(1 for c in first_100 if c.isprintable() or c in ['\n', '\r', '\t'])
+
+    # If less than 70% of first 100 chars are printable, it's likely corrupted
+    if len(first_100) > 0 and (printable_count / len(first_100)) < 0.7:
+        logger.error(f"[VALIDATION FAILED] HTML starts with binary garbage (only {printable_count}/{len(first_100)} printable chars) from {url}")
+        return False
+
+    logger.info(f"[VALIDATION PASSED] HTML has valid structure and is usable for {url}")
+    return True
+
+
 class WebsiteContentScraper:
     """
     Comprehensive website content scraper that extracts:
@@ -38,21 +88,68 @@ class WebsiteContentScraper:
         self.html = None
 
     def fetch_website(self) -> bool:
-        """Fetch the website HTML"""
+        """Fetch the website HTML with HTTP/HTTPS fallback"""
+        # Enhanced headers to bypass anti-bot protection
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            # IMPORTANT: Don't request 'br' (brotli) encoding unless brotli package is installed
+            # Otherwise requests library won't decompress and we'll get binary garbage
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0',
+            'DNT': '1',
+        }
+
+        # Try original URL first
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
             response = requests.get(self.url, headers=headers, timeout=15)
             response.raise_for_status()
 
+            # IMPORTANT: Use response.text instead of response.content.decode()
+            # response.text automatically handles GZIP/deflate/brotli decompression AND decoding
+            # response.content gives you raw compressed bytes which causes binary garbage
             self.html = response.text
+
+            # Remove any NULL bytes that can't be stored in PostgreSQL
+            self.html = self.html.replace('\x00', '')
+
             self.soup = BeautifulSoup(self.html, 'html.parser')
-            logger.info(f"Successfully fetched website: {self.url}")
+            logger.info(f"Successfully fetched and decoded website: {self.url} ({len(self.html)} bytes)")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to fetch website {self.url}: {str(e)}")
+            logger.warning(f"Failed to fetch {self.url}: {str(e)}")
+
+            # Try HTTPS if HTTP failed
+            if self.url.startswith('http://'):
+                https_url = self.url.replace('http://', 'https://', 1)
+                try:
+                    logger.info(f"Retrying with HTTPS: {https_url}")
+                    response = requests.get(https_url, headers=headers, timeout=15)
+                    response.raise_for_status()
+
+                    self.url = https_url  # Update URL to HTTPS
+
+                    # Use response.text (auto-decompresses and decodes)
+                    self.html = response.text
+
+                    # Remove any NULL bytes
+                    self.html = self.html.replace('\x00', '')
+
+                    self.soup = BeautifulSoup(self.html, 'html.parser')
+                    logger.info(f"Successfully fetched and decoded website with HTTPS: {https_url} ({len(self.html)} bytes)")
+                    return True
+                except Exception as e2:
+                    logger.error(f"HTTPS fallback also failed: {str(e2)}")
+
+            logger.error(f"Failed to fetch website {self.url}")
             return False
 
     def extract_logo(self) -> Optional[str]:
@@ -354,6 +451,104 @@ class WebsiteContentScraper:
 
         return []
 
+    def extract_fonts(self) -> Dict[str, List[str]]:
+        """Extract font families used on the website"""
+        fonts = {
+            'primary': [],
+            'headings': [],
+            'body': []
+        }
+
+        try:
+            # Font pattern matching
+            font_pattern = r'font-family:\s*([^;]+)'
+
+            # Check style tags
+            style_tags = self.soup.find_all('style')
+            for style in style_tags:
+                found_fonts = re.findall(font_pattern, style.get_text(), re.IGNORECASE)
+                for font in found_fonts:
+                    # Clean font names
+                    font_list = [f.strip().strip('"').strip("'") for f in font.split(',')]
+                    fonts['primary'].extend(font_list)
+
+            # Check inline styles
+            elements_with_style = self.soup.find_all(style=True)
+            for elem in elements_with_style[:50]:
+                found_fonts = re.findall(font_pattern, elem['style'], re.IGNORECASE)
+                for font in found_fonts:
+                    font_list = [f.strip().strip('"').strip("'") for f in font.split(',')]
+                    if elem.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+                        fonts['headings'].extend(font_list)
+                    elif elem.name in ['p', 'span', 'div']:
+                        fonts['body'].extend(font_list)
+
+            # Remove duplicates and generic fonts
+            generic_fonts = ['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui']
+            for key in fonts:
+                fonts[key] = [f for f in list(set(fonts[key])) if f.lower() not in generic_fonts][:3]
+
+            logger.info(f"Extracted fonts - Primary: {fonts['primary'][:3]}")
+
+            return fonts
+
+        except Exception as e:
+            logger.error(f"Error extracting fonts: {str(e)}")
+
+        return fonts
+
+    def extract_videos(self) -> List[Dict[str, str]]:
+        """Extract video URLs from the website"""
+        videos = []
+
+        try:
+            # Check video tags
+            video_tags = self.soup.find_all('video')
+            for video in video_tags[:5]:  # Limit to 5 videos
+                sources = video.find_all('source')
+                for source in sources:
+                    src = source.get('src')
+                    if src:
+                        video_url = urljoin(self.url, src)
+                        videos.append({
+                            'url': video_url,
+                            'type': source.get('type', 'video/mp4'),
+                            'poster': video.get('poster', '')
+                        })
+                        break  # Just first source per video
+
+            # Check for YouTube embeds
+            youtube_pattern = r'(?:youtube\.com/embed/|youtu\.be/)([a-zA-Z0-9_-]+)'
+            iframes = self.soup.find_all('iframe', src=True)
+            for iframe in iframes:
+                src = iframe['src']
+                match = re.search(youtube_pattern, src)
+                if match:
+                    videos.append({
+                        'url': f"https://www.youtube.com/embed/{match.group(1)}",
+                        'type': 'youtube',
+                        'video_id': match.group(1)
+                    })
+
+            # Check for Vimeo embeds
+            vimeo_pattern = r'player\.vimeo\.com/video/(\d+)'
+            for iframe in iframes:
+                src = iframe['src']
+                match = re.search(vimeo_pattern, src)
+                if match:
+                    videos.append({
+                        'url': f"https://player.vimeo.com/video/{match.group(1)}",
+                        'type': 'vimeo',
+                        'video_id': match.group(1)
+                    })
+
+            logger.info(f"Extracted {len(videos)} videos")
+
+        except Exception as e:
+            logger.error(f"Error extracting videos: {str(e)}")
+
+        return videos
+
     def extract_certifications_awards(self) -> List[str]:
         """Extract certifications, awards, and badges"""
         certifications = []
@@ -459,7 +654,7 @@ class WebsiteContentScraper:
                     response.raise_for_status()
                     combined_css += f"\n/* CSS from {css_url} */\n"
                     combined_css += response.text
-                    logger.info(f"✓ Fetched {len(response.text)} chars from {css_url}")
+                    logger.info(f"[CSS] Fetched {len(response.text)} chars from {css_url}")
                 except Exception as e:
                     logger.warning(f"Failed to fetch CSS {css_url}: {e}")
 
@@ -467,6 +662,136 @@ class WebsiteContentScraper:
             logger.error(f"Error fetching external CSS: {e}")
 
         return combined_css
+
+    def extract_page_structure(self) -> List[Dict[str, Any]]:
+        """
+        Extract the ACTUAL page structure - REAL content sections only (no cookies/nav/footer).
+        This allows us to recreate THEIR layout with meaningful content.
+
+        Returns list of REAL content sections in order
+        """
+        sections = []
+
+        # NOISE KEYWORDS - sections to SKIP (cookies, navigation, footers, etc.)
+        noise_keywords = [
+            'cookie', 'consent', 'gdpr', 'privacy-policy', 'policy',
+            'navigation', 'navbar', 'nav-menu', 'site-nav',
+            'language-selector', 'location-selector', 'country-select',
+            'sign-in', 'login-form', 'account-menu',
+            'shopping-cart', 'cart', 'basket',
+            'sidebar', 'widget', 'ad-banner', 'advertisement',
+            'popup', 'modal', 'overlay', 'lightbox',
+            'site-footer', 'page-footer', 'footer-nav'
+        ]
+
+        # Find main content area (skip headers, footers, navs)
+        main_content = (
+            self.soup.find('main') or
+            self.soup.find(id=re.compile(r'main|content', re.I)) or
+            self.soup.find(class_=re.compile(r'main|content|page-content', re.I)) or
+            self.soup.find('body')
+        )
+
+        if not main_content:
+            return []
+
+        # Find all major sections - be more flexible with class names
+        # First try semantic HTML5 sections and articles
+        section_elements = main_content.find_all(['section', 'article'], recursive=True)
+
+        # If no sections found, search for ALL divs recursively
+        if len(section_elements) < 3:
+            # Search for all divs (the filtering later will remove noise)
+            all_divs = main_content.find_all('div', recursive=True)
+            section_elements.extend(all_divs[:50])  # Take first 50 divs to analyze
+
+        # Filter out noise sections
+        filtered_sections = []
+        for element in section_elements[:25]:  # Check first 25
+            section_id = element.get('id', '').lower()
+            section_class = ' '.join(element.get('class', [])).lower()
+            combined = f"{section_id} {section_class}"
+
+            # SKIP if this matches noise keywords
+            if any(noise in combined for noise in noise_keywords):
+                continue
+
+            # Get text content
+            section_text = element.get_text(strip=True, separator=' ')
+
+            # SKIP if section is too small (< 20 chars) - allow minimal hero sections
+            if len(section_text) < 20:
+                continue
+
+            # SKIP if it's mostly links (navigation)
+            links = element.find_all('a')
+            link_text_length = sum(len(a.get_text(strip=True)) for a in links)
+            total_text_length = len(section_text)
+            if links and len(links) > 10 and total_text_length < 500:
+                continue  # Too many links, not enough text = navigation
+            if total_text_length > 0 and (link_text_length / total_text_length) > 0.8:
+                continue  # More than 80% is links = navigation
+
+            filtered_sections.append(element)
+
+        # Process filtered sections
+        for idx, element in enumerate(filtered_sections[:12]):  # Keep top 12 real sections
+            section_id = element.get('id', '')
+            section_class = ' '.join(element.get('class', []))
+
+            # Extract LONGER content (2000 chars instead of 500 for GPT-4 analysis)
+            section_text = element.get_text(strip=True, separator=' ')
+
+            # Find heading
+            heading = element.find(['h1', 'h2', 'h3', 'h4'])
+            heading_text = heading.get_text(strip=True) if heading else ""
+
+            # Identify section type
+            combined_text = f"{section_id} {section_class} {heading_text} {section_text[:300]}".lower()
+
+            section_type = "content"  # Default
+
+            # First section is usually hero
+            if idx == 0:
+                section_type = "hero"
+            elif any(word in combined_text for word in ['hero', 'banner', 'jumbotron', 'intro', 'welcome']):
+                section_type = "hero"
+            elif any(word in combined_text for word in ['about', 'who we are', 'our story', 'company', 'mission', 'vision']):
+                section_type = "about"
+            elif any(word in combined_text for word in ['service', 'what we do', 'offering', 'solutions', 'menu', 'food', 'dishes', 'products']):
+                section_type = "services"
+            elif any(word in combined_text for word in ['portfolio', 'work', 'projects', 'gallery', 'showcase', 'examples']):
+                section_type = "portfolio"
+            elif any(word in combined_text for word in ['testimonial', 'review', 'client', 'feedback', 'rating', 'say']):
+                section_type = "testimonials"
+            elif any(word in combined_text for word in ['team', 'staff', 'people', 'meet', 'experts']):
+                section_type = "team"
+            elif any(word in combined_text for word in ['contact', 'get in touch', 'reach us', 'find us', 'location', 'hours', 'call', 'email']):
+                section_type = "contact"
+            elif any(word in combined_text for word in ['pricing', 'plans', 'packages', 'price', 'cost']):
+                section_type = "pricing"
+            elif any(word in combined_text for word in ['faq', 'questions', 'q&a', 'frequently', 'asked']):
+                section_type = "faq"
+            elif any(word in combined_text for word in ['feature', 'why', 'benefit', 'advantage']):
+                section_type = "features"
+            elif any(word in combined_text for word in ['offer', 'deal', 'promotion', 'special', 'discount']):
+                section_type = "offers"
+
+            sections.append({
+                'order': idx,
+                'type': section_type,
+                'heading': heading_text,
+                'content': section_text[:1500],  # Save 1500 chars per section for GPT-4
+                'id': section_id,
+                'classes': section_class
+            })
+
+        logger.info(f"[PAGE STRUCTURE] Detected {len(sections)} REAL content sections (filtered out {len(filtered_sections) - len(sections)} utility sections):")
+        for s in sections[:5]:  # Log first 5
+            preview = s['heading'][:40] if s['heading'] else s['content'][:40]
+            logger.info(f"   {s['order']}. {s['type'].upper()}: {preview}...")
+
+        return sections
 
     def scrape_all(self) -> Dict[str, Any]:
         """
@@ -484,7 +809,27 @@ class WebsiteContentScraper:
         external_css = self.fetch_external_css()
 
         # Combine HTML with external CSS for complete color extraction
-        raw_html_with_css = self.html + f"\n<style>\n{external_css}\n</style>"
+        # IMPORTANT: Only add CSS if it's valid and doesn't break HTML structure
+        if external_css and len(external_css) > 0:
+            # Clean external CSS - remove any NULL bytes or problematic characters
+            external_css_clean = external_css.replace('\x00', '').strip()
+            raw_html_with_css = self.html + f"\n<style>\n{external_css_clean}\n</style>"
+        else:
+            raw_html_with_css = self.html
+
+        logger.info(f"[HTML] Combined HTML size: {len(raw_html_with_css)} bytes (original: {len(self.html)}, CSS: {len(external_css)})")
+
+        # Extract page structure FIRST
+        page_structure = self.extract_page_structure()
+
+        # Extract MAIN CONTENT text only (not navigation/cookies/footer)
+        main_content = (
+            self.soup.find('main') or
+            self.soup.find(id=re.compile(r'main|content', re.I)) or
+            self.soup.find(class_=re.compile(r'main|content|page-content', re.I)) or
+            self.soup.find('body')
+        )
+        main_text = main_content.get_text(strip=True, separator=' ')[:10000] if main_content else self.soup.get_text()[:5000]
 
         # Extract all content
         scraped_data = {
@@ -495,18 +840,36 @@ class WebsiteContentScraper:
             'about': self.extract_about_content(),
             'services_menu': self.extract_services_or_menu(),
             'images': self.extract_images(),
+            'videos': self.extract_videos(),  # NEW: Extract videos
             'contact': self.extract_contact_info(),
             'social_media': self.extract_social_media(),
             'colors': self.extract_colors(),
+            'fonts': self.extract_fonts(),  # NEW: Extract fonts
             'certifications': self.extract_certifications_awards(),
             'navigation': self.extract_navigation(),
             'testimonials': self.extract_testimonials(),
+            'page_structure': page_structure,  # Actual page sections (FILTERED)
             'raw_html': raw_html_with_css,  # Include HTML + external CSS
-            'text_content': self.soup.get_text()[:5000]  # First 5000 chars of text
+            'text_content': main_text  # MAIN CONTENT text only (up to 10000 chars)
         }
 
+        # CRITICAL: Validate scraped HTML before returning
+        # UPDATED: Validate the ORIGINAL HTML, not raw_html_with_css (which has appended CSS)
+        # The CSS might contain data URIs or other content that triggers false positives
+        # DEBUG: Log HTML preview before validation
+        html_preview = self.html[:200] if self.html else "EMPTY"
+        logger.info(f"[DEBUG] HTML preview (first 200 chars): {html_preview}")
+        logger.info(f"[DEBUG] HTML has <!doctype: {('<!doctype' in self.html.lower())}")
+        logger.info(f"[DEBUG] HTML has <html: {('<html' in self.html.lower())}")
+        logger.info(f"[DEBUG] HTML has <body: {('<body' in self.html.lower())}")
+
+        if not validate_scraped_html(self.html, self.url):
+            logger.error(f"[VALIDATION FAILED] Scraped HTML is corrupted or invalid for {self.url}")
+            logger.error(f"[SAFETY] Returning empty dict to prevent corrupted data from being saved")
+            return {}
+
         logger.info(f"Scraping complete! Extracted data from {len(scraped_data)} categories")
-        logger.info(f"✓ Included {len(external_css)} chars of external CSS")
+        logger.info(f"[CSS] Included {len(external_css)} chars of external CSS")
         return scraped_data
 
 

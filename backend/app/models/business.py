@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, Text, DateTime, Index
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
 from ..database import Base
@@ -32,6 +32,24 @@ class Business(Base):
 
     # Evaluation Score (aggregate from Lighthouse evaluation)
     score = Column(Integer, nullable=True, index=True)
+
+    # Scraped Website Data (COMPLETE website clone data)
+    # Stores: raw_html, images, videos, fonts, colors, components, structure, content
+    scraped_data = Column(JSONB, nullable=True, doc="Complete scraped website data for cloning")
+
+    # Enhanced Scraping Fields (Story 4.10)
+    scraped_html = Column(Text, nullable=True, doc="Complete HTML document from business website")
+    scraped_css = Column(Text, nullable=True, doc="Extracted inline and internal CSS")
+    external_css_urls = Column(JSONB, nullable=True, doc="Array of external CSS file URLs")
+    image_urls = Column(JSONB, nullable=True, doc="Array of all image src URLs")
+    logo_urls = Column(JSONB, nullable=True, doc="Array of logo image URLs")
+    video_urls = Column(JSONB, nullable=True, doc="Array of video src URLs and iframe embeds")
+    map_embeds = Column(JSONB, nullable=True, doc="Array of map iframe embeds")
+    color_palette = Column(JSONB, nullable=True, doc="Array of hex color codes from CSS")
+    component_count = Column(Integer, nullable=True, doc="Count of major HTML sections/components")
+    component_structure = Column(JSONB, nullable=True, doc="Detailed structure of HTML components")
+    scraping_completed_at = Column(DateTime, nullable=True, doc="Timestamp when scraping completed")
+    scraping_error = Column(Text, nullable=True, doc="Error message if scraping failed")
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

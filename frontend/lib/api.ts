@@ -203,7 +203,7 @@ class APIClient {
       `/api/businesses/${businessId}/templates/generate`,
       { num_variants: numVariants },
       {
-        timeout: 180000, // 3 minutes for GPT-4 template generation (30-60s per variant)
+        timeout: 600000, // 10 minutes for GPT-4 template generation with full quality
       }
     );
     return response.data.templates;
@@ -214,7 +214,7 @@ class APIClient {
       `/api/businesses/${businessId}/templates/regenerate`,
       { num_variants: numVariants },
       {
-        timeout: 180000, // 3 minutes for GPT-4 template generation (30-60s per variant)
+        timeout: 600000, // 10 minutes for GPT-4 template generation with full quality
       }
     );
     return response.data.templates;

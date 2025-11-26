@@ -32,6 +32,14 @@ class VideoAsset:
         self.poster = poster
         self.attribution = attribution
 
+    def to_dict(self):
+        """Convert to dictionary for JSON serialization"""
+        return {
+            "url": self.url,
+            "poster": self.poster,
+            "attribution": self.attribution
+        }
+
 
 class PremiumTemplateBuilder:
     """
@@ -416,6 +424,18 @@ class PremiumTemplateBuilder:
             width: 100%;
             height: 100%;
             object-fit: cover;
+            z-index: -2;
+        }}
+
+        .hero-image-bg {{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             z-index: -2;
         }}
 
@@ -1633,8 +1653,8 @@ class PremiumTemplateBuilder:
                 gap: 1rem;
             }}
 
-            .hero-video {{
-                display: none; /* Hide video on mobile for performance */
+            .hero-video, .hero-image-bg {{
+                display: none; /* Hide video/background images on mobile for performance */
             }}
 
             .scroll-indicator {{
@@ -2142,22 +2162,146 @@ class PremiumTemplateBuilder:
         """
 
     def _build_body(self) -> str:
-        """Generate complete body with all sections"""
+        """Generate complete body with DYNAMIC sections based on their actual website"""
         business_name = self.business_data.get("name", "Business")
 
-        return f"""
-<body>
-    {self._build_loading_overlay()}
-    {self._build_navbar()}
+        # Get sections from GPT-4's analysis of their website structure
+        sections = self.enhanced_content.get("sections", [])
+
+        # Build sections dynamically based on THEIR website structure
+        sections_html = ""
+        if sections and len(sections) > 0:
+            logger.info(f"[BUILD] Building DYNAMIC website with {len(sections)} sections from their old site")
+
+            # Sort sections by order
+            sorted_sections = sorted(sections, key=lambda x: x.get('order', 999))
+
+            for section in sorted_sections:
+                section_type = section.get('type', 'unknown').lower()
+                section_html = self._build_dynamic_section(section)
+                sections_html += section_html
+        else:
+            # Fallback to default structure if no sections detected
+            logger.warning("[WARNING] No sections from GPT-4, using default structure")
+            sections_html = f"""
     {self._build_hero()}
     {self._build_services()}
     {self._build_about()}
     {self._build_testimonials()}
     {self._build_gallery()}
     {self._build_contact()}
+"""
+
+        return f"""
+<body>
+    {self._build_loading_overlay()}
+    {self._build_navbar()}
+    {sections_html}
     {self._build_footer()}
     {self._build_scripts()}
 </body>
+"""
+
+    def _build_dynamic_section(self, section: Dict[str, Any]) -> str:
+        """
+        Build a section dynamically based on its type and content from their old website.
+
+        Args:
+            section: Section data from GPT-4 containing type, heading, content, order
+
+        Returns:
+            HTML string for this section
+        """
+        section_type = section.get('type', 'unknown').lower()
+        heading = section.get('heading', '')
+        content = section.get('content', '')
+
+        logger.info(f"   Building {section_type.upper()} section: {heading[:40]}...")
+
+        # Route to appropriate builder based on section type - PASS HEADING AND CONTENT!
+        if section_type == 'hero':
+            return self._build_hero(heading, content)
+        elif section_type in ['services', 'service', 'offerings', 'solutions', 'what we do']:
+            return self._build_services(heading, content)
+        elif section_type in ['about', 'about us', 'who we are', 'our story', 'company']:
+            return self._build_about(heading, content)
+        elif section_type in ['testimonials', 'testimonial', 'reviews', 'client feedback', 'clients']:
+            return self._build_testimonials(heading, content)
+        elif section_type in ['gallery', 'portfolio', 'our work', 'projects', 'showcase']:
+            return self._build_gallery(heading, content)
+        elif section_type in ['contact', 'get in touch', 'reach us', 'contact us']:
+            return self._build_contact(heading, content)
+        elif section_type in ['team', 'our team', 'meet the team', 'staff', 'people']:
+            return self._build_team_section(heading, content)
+        elif section_type in ['pricing', 'plans', 'packages', 'pricing plans']:
+            return self._build_pricing_section(heading, content)
+        elif section_type in ['faq', 'questions', 'q&a', 'faqs']:
+            return self._build_faq_section(heading, content)
+        else:
+            # Generic section for any other type
+            return self._build_generic_section(heading, content, section_type)
+
+    def _build_team_section(self, heading: str, content: str) -> str:
+        """Build team/staff section"""
+        return f"""
+    <!-- Team Section -->
+    <section class="section" id="team">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">{heading or 'Our Team'}</h2>
+                <p class="section-subtitle">{content[:200]}...</p>
+            </div>
+            <div class="services-grid">
+                <div class="service-card reveal">
+                    <div class="service-icon"><i class="fas fa-users"></i></div>
+                    <h3>Expert Team</h3>
+                    <p>{content[:300]}...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+"""
+
+    def _build_pricing_section(self, heading: str, content: str) -> str:
+        """Build pricing/plans section"""
+        return f"""
+    <!-- Pricing Section -->
+    <section class="section" id="pricing">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">{heading or 'Pricing'}</h2>
+                <p class="section-subtitle">{content[:200]}...</p>
+            </div>
+        </div>
+    </section>
+"""
+
+    def _build_faq_section(self, heading: str, content: str) -> str:
+        """Build FAQ section"""
+        return f"""
+    <!-- FAQ Section -->
+    <section class="section" id="faq">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">{heading or 'FAQs'}</h2>
+                <p class="section-subtitle">{content[:200]}...</p>
+            </div>
+        </div>
+    </section>
+"""
+
+    def _build_generic_section(self, heading: str, content: str, section_type: str) -> str:
+        """Build a generic section for unrecognized types"""
+        return f"""
+    <!-- {section_type.title()} Section -->
+    <section class="section" id="{section_type.replace(' ', '-')}">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">{heading}</h2>
+                <p class="section-subtitle">{content[:300]}...</p>
+            </div>
+        </div>
+    </section>
 """
 
     def _build_loading_overlay(self) -> str:
@@ -2209,10 +2353,11 @@ class PremiumTemplateBuilder:
     </nav>
 """
 
-    def _build_hero(self) -> str:
-        """Generate hero section with video background"""
-        headline = self.enhanced_content.get("headline", "Welcome to Excellence")
-        subheadline = self.enhanced_content.get("subheadline", "Experience premium quality")
+    def _build_hero(self, heading: str = "", content: str = "") -> str:
+        """Generate hero section with video or image background from old website"""
+        # Use scraped heading/content if provided, otherwise fall back to enhanced content
+        headline = heading or self.enhanced_content.get("headline", "Welcome to Excellence")
+        subheadline = content[:200] if content else self.enhanced_content.get("subheadline", "Experience premium quality")
         ctas_data = self.enhanced_content.get("ctas", ["Get Started", "Learn More"])
 
         # Handle both dict and list formats
@@ -2223,15 +2368,41 @@ class PremiumTemplateBuilder:
             primary_cta = ctas_data[0] if len(ctas_data) > 0 else "Get Started"
             secondary_cta = ctas_data[1] if len(ctas_data) > 1 else "Learn More"
 
-        video_html = ""
-        if self.media_assets.get("hero_video"):
+        # Priority 1: Use extracted hero image from old website for brand consistency
+        hero_background = ""
+        extracted_images = self.business_data.get("extracted_images", [])
+        hero_image_found = False
+
+        for img in extracted_images:
+            if isinstance(img, dict):
+                img_type = img.get("type", "general")
+                url = img.get("url", "")
+                # Look for hero, banner, or header images from old website
+                if img_type in ["hero", "banner"] and url and not self._is_low_quality_image(url):
+                    hero_background = f'<div class="hero-image-bg" style="background-image: url(\'{url}\');"></div>'
+                    hero_image_found = True
+                    logger.info(f"[SUCCESS] Using extracted hero image from old website: {url[:50]}...")
+                    break
+
+        # Priority 2: Use video if no hero image found
+        if not hero_image_found and self.media_assets.get("hero_video"):
             video = self.media_assets["hero_video"]
-            video_html = f'<video class="hero-video" autoplay muted loop playsinline><source src="{video.url}" type="video/mp4"></video>'
+            hero_background = f'<video class="hero-video" autoplay muted loop playsinline><source src="{video.url}" type="video/mp4"></video>'
+
+        # Priority 3: Use first gallery image if no hero or video
+        elif not hero_image_found and not self.media_assets.get("hero_video") and extracted_images:
+            for img in extracted_images:
+                if isinstance(img, dict):
+                    url = img.get("url", "")
+                    if url and not self._is_low_quality_image(url):
+                        hero_background = f'<div class="hero-image-bg" style="background-image: url(\'{url}\');"></div>'
+                        logger.info(f"Using first extracted image as hero background")
+                        break
 
         return f"""
     <!-- Hero Section -->
     <section class="hero" id="home">
-        {video_html}
+        {hero_background}
         <div class="hero-overlay"></div>
         <div class="hero-particles" id="heroParticles"></div>
 
@@ -2254,9 +2425,18 @@ class PremiumTemplateBuilder:
     </section>
 """
 
-    def _build_services(self) -> str:
+    def _build_services(self, heading: str = "", content: str = "") -> str:
         """Generate services/products section with enhanced modern cards"""
-        services = self.business_data.get("services", [])
+        # Use scraped heading if provided
+        section_heading = heading or "Our Services"
+        section_subtitle = content[:300] if content else "Premium solutions tailored to your needs with unmatched quality and dedication"
+
+        # CRITICAL: Use GPT-4 enhanced services FIRST (from their actual website)
+        services = self.enhanced_content.get("services", [])
+
+        # Fall back to scraped services if GPT-4 didn't return any
+        if not services:
+            services = self.business_data.get("services", [])
 
         if not services or len(services) == 0:
             # Default services if none provided
@@ -2302,8 +2482,8 @@ class PremiumTemplateBuilder:
         <div class="container">
             <div class="section-header reveal">
                 <span class="section-badge">What We Offer</span>
-                <h2 class="section-title">Our Services</h2>
-                <p class="section-subtitle">Premium solutions tailored to your needs with unmatched quality and dedication</p>
+                <h2 class="section-title">{section_heading}</h2>
+                <p class="section-subtitle">{section_subtitle}</p>
             </div>
 
             <div class="services-grid">
@@ -2316,17 +2496,19 @@ class PremiumTemplateBuilder:
     </section>
 """
 
-    def _build_about(self) -> str:
+    def _build_about(self, heading: str = "", content: str = "") -> str:
         """Generate about section with enhanced statistics and visual elements"""
-        about_text = self.enhanced_content.get("about", "We are committed to excellence and delivering premium quality.")
+        # Use scraped heading/content if provided
+        section_heading = heading or "Our Story"
+        about_text = content if content else self.enhanced_content.get("about", "We are committed to excellence and delivering premium quality.")
 
-        return """
+        return f"""
     <!-- About Section -->
     <section class="section about-section" id="about">
         <div class="container">
             <div class="section-header reveal">
                 <span class="section-badge">About Us</span>
-                <h2 class="section-title">Our Story</h2>
+                <h2 class="section-title">{section_heading}</h2>
                 <p class="section-subtitle">Committed to excellence in everything we do</p>
             </div>
 
@@ -2335,7 +2517,7 @@ class PremiumTemplateBuilder:
                     <div class="about-decorative-quote">
                         <i class="fas fa-quote-left"></i>
                     </div>
-                    <p class="about-text">""" + about_text + """</p>
+                    <p class="about-text">{about_text}</p>
                     <div class="about-features">
                         <div class="about-feature-item">
                             <i class="fas fa-check-circle"></i>
@@ -2398,9 +2580,17 @@ class PremiumTemplateBuilder:
     </section>
 """
 
-    def _build_testimonials(self) -> str:
+    def _build_testimonials(self, heading: str = "", content: str = "") -> str:
         """Generate testimonials carousel"""
-        testimonials = self.business_data.get("testimonials", [])
+        # Use scraped heading if provided
+        section_heading = heading or "Client Testimonials"
+
+        # CRITICAL: Use GPT-4 enhanced testimonials FIRST (from their actual website)
+        testimonials = self.enhanced_content.get("testimonials", [])
+
+        # Fall back to scraped testimonials if GPT-4 didn't return any
+        if not testimonials:
+            testimonials = self.business_data.get("testimonials", [])
 
         if not testimonials or len(testimonials) == 0:
             # Default testimonials
@@ -2429,7 +2619,7 @@ class PremiumTemplateBuilder:
     <section class="section" id="testimonials">
         <div class="container">
             <div class="section-header reveal">
-                <h2 class="section-title">Client Testimonials</h2>
+                <h2 class="section-title">{section_heading}</h2>
                 <p class="section-subtitle">Hear what our clients have to say</p>
             </div>
 
@@ -2455,11 +2645,16 @@ class PremiumTemplateBuilder:
         if 'unsplash.com' in url_lower or 'pexels.com' in url_lower:
             return False
 
-        # Skip common low-quality indicators
+        # ALLOW SVG and GIF for content images (often high-quality)
+        # Only skip .ico (favicons) now
+        if url_lower.endswith('.ico'):
+            return True
+
+        # Skip common low-quality indicators (but more lenient now)
         low_quality_indicators = [
-            'thumbnail', 'thumb', 'icon', 'avatar',
+            'thumbnail', 'thumb', 'icon-', 'avatar',
             'badge', 'button', '50x50', '100x100', '150x150',
-            'small', 'tiny', 'mini', '-xs', '-sm'  # Added hyphens to be more specific
+            'tiny', 'mini', '-xs-'  # Made more specific to avoid false positives
         ]
 
         for indicator in low_quality_indicators:
@@ -2468,10 +2663,6 @@ class PremiumTemplateBuilder:
 
         # Skip data URLs and very short URLs
         if url.startswith('data:') or len(url) < 20:
-            return True
-
-        # Skip common placeholder/icon extensions
-        if url_lower.endswith(('.svg', '.gif', '.ico')):
             return True
 
         return False
@@ -2515,35 +2706,60 @@ class PremiumTemplateBuilder:
         logger.info(f"Generated {count} high-quality placeholder images for {business_type}")
         return images
 
-    def _build_gallery(self) -> str:
+    def _build_gallery(self, heading: str = "", content: str = "") -> str:
         """Generate image gallery with enhanced masonry-style layout and quality validation"""
+        # Use scraped heading if provided
+        section_heading = heading or "Our Gallery"
         # Combine extracted images from old website + premium media assets
         all_images = []
 
-        # Add premium media images from Unsplash/Pexels FIRST (higher quality)
-        premium_images = self.media_assets.get("images", [])
-        all_images.extend(premium_images)
-
-        # Add extracted images from old website (secondary)
+        # Extract high-quality images from old website FIRST to maintain branding
+        extracted_images_list = []
         extracted_images = self.business_data.get("extracted_images", [])
         for img in extracted_images:
             if isinstance(img, dict):
                 url = img.get("url", "")
                 # Validate extracted image quality - skip low quality indicators
                 if url and not self._is_low_quality_image(url):
-                    all_images.append(ImageAsset(
+                    extracted_images_list.append(ImageAsset(
                         url=url,
                         alt=img.get("alt", "Business image"),
                         photographer="",
-                        source="Extracted"
+                        source="Extracted from old website"
                     ))
+
+        # Get premium media images from Unsplash/Pexels
+        premium_images = self.media_assets.get("images", [])
+
+        # INTERLEAVE: Mix extracted and premium images for better brand consistency
+        # Start with extracted images to preserve original branding, then add premium
+        # Pattern: 2 extracted, 1 premium, 2 extracted, 1 premium, etc.
+        logger.info(f"[IMAGE MIX] Image mixing: {len(extracted_images_list)} extracted + {len(premium_images)} premium")
+
+        extracted_idx = 0
+        premium_idx = 0
+        while len(all_images) < 12:  # Gallery limit
+            # Add up to 2 extracted images
+            for _ in range(2):
+                if extracted_idx < len(extracted_images_list):
+                    all_images.append(extracted_images_list[extracted_idx])
+                    extracted_idx += 1
+
+            # Add 1 premium image
+            if premium_idx < len(premium_images):
+                all_images.append(premium_images[premium_idx])
+                premium_idx += 1
+
+            # Stop if we've exhausted both sources
+            if extracted_idx >= len(extracted_images_list) and premium_idx >= len(premium_images):
+                break
 
         # Fallback to high-quality business-appropriate placeholders if not enough images
         if not all_images or len(all_images) < 6:
             business_type = self.business_data.get("business_type", "default")
             all_images = self._get_quality_placeholder_images(business_type, 9)
 
-        logger.info(f"Gallery: {len(premium_images)} premium + {len(extracted_images)} extracted = {len(all_images)} total images (quality validated)")
+        logger.info(f"Gallery: {len(extracted_images_list)} extracted + {len(premium_images)} premium = {len(all_images)} total images (quality validated, interleaved)")
 
         gallery_html = ""
         # Optimized aspect ratio pattern for better visual balance
@@ -2623,7 +2839,7 @@ class PremiumTemplateBuilder:
         <div class="container">
             <div class="section-header reveal">
                 <span class="section-badge">Portfolio</span>
-                <h2 class="section-title">Gallery</h2>
+                <h2 class="section-title">{section_heading}</h2>
                 <p class="section-subtitle">Explore our work and achievements through our visual showcase</p>
             </div>
 
@@ -2634,8 +2850,10 @@ class PremiumTemplateBuilder:
     </section>
 """
 
-    def _build_contact(self) -> str:
+    def _build_contact(self, heading: str = "", content: str = "") -> str:
         """Generate contact section with form"""
+        # Use scraped heading if provided
+        section_heading = heading or "Get In Touch"
         business_name = self.business_data.get("name", "Business")
         contact = self.business_data.get("contact", {})
 
@@ -2648,7 +2866,7 @@ class PremiumTemplateBuilder:
     <section class="section" id="contact">
         <div class="container">
             <div class="section-header reveal">
-                <h2 class="section-title">Get In Touch</h2>
+                <h2 class="section-title">{section_heading}</h2>
                 <p class="section-subtitle">We'd love to hear from you</p>
             </div>
 
@@ -2987,6 +3205,16 @@ class PremiumTemplateBuilder:
         """Replace placeholders with GPT-4 enhanced content"""
         self.enhanced_content = {**self.enhanced_content, **gpt_enhanced_content}
 
+        # DEBUG: Log what GPT-4 returned for verification
+        logger.info(f"[GPT-4 CONTENT] Headline: {gpt_enhanced_content.get('headline', 'N/A')[:60]}")
+        logger.info(f"[GPT-4 CONTENT] Sections: {len(gpt_enhanced_content.get('sections', []))} sections")
+        logger.info(f"[GPT-4 CONTENT] Services: {len(gpt_enhanced_content.get('services', []))} services")
+        logger.info(f"[GPT-4 CONTENT] Testimonials: {len(gpt_enhanced_content.get('testimonials', []))} testimonials")
+
+        # Log first 2 sections to verify they have real content
+        for i, section in enumerate(gpt_enhanced_content.get('sections', [])[:2]):
+            logger.info(f"   Section {i}: {section.get('type')} - '{section.get('heading', 'No heading')[:40]}'")
+
     def inject_media_assets(self) -> None:
         """Media assets are already integrated during build"""
         pass
@@ -3002,7 +3230,7 @@ class PremiumTemplateBuilder:
         # PRIORITY 1: Use extracted colors from the business's actual website
         extracted_colors = self.business_data.get("extracted_colors", [])
 
-        logger.info(f"🎨 COLOR EXTRACTION CHECK:")
+        logger.info(f"[COLOR CHECK] COLOR EXTRACTION CHECK:")
         logger.info(f"   Extracted colors available: {len(extracted_colors)} colors")
         logger.info(f"   Colors: {extracted_colors}")
 
@@ -3012,7 +3240,7 @@ class PremiumTemplateBuilder:
             self.theme_colors["secondary"] = extracted_colors[1] if len(extracted_colors) > 1 else extracted_colors[0]
             self.theme_colors["accent"] = extracted_colors[2] if len(extracted_colors) > 2 else extracted_colors[1]
 
-            logger.info(f"✅ SUCCESS: Using EXTRACTED colors from business website!")
+            logger.info(f"[SUCCESS] SUCCESS: Using EXTRACTED colors from business website!")
             logger.info(f"   Primary: {self.theme_colors['primary']}")
             logger.info(f"   Secondary: {self.theme_colors['secondary']}")
             logger.info(f"   Accent: {self.theme_colors['accent']}")

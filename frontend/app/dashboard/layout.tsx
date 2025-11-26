@@ -16,7 +16,7 @@ export default function DashboardLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
         <header className="h-16 px-4 sm:px-6 flex items-center" style={{ borderBottom: '1px solid #27391C', backgroundColor: '#27391C' }}>
-          <h2 className="text-base sm:text-lg font-semibold text-white ml-12 lg:ml-0">
+          <h2 className="text-base sm:text-lg font-semibold text-white lg:ml-0">
             Lead Generation Dashboard
           </h2>
         </header>

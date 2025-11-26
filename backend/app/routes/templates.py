@@ -13,10 +13,11 @@ from app.schemas.template import (
     TemplateGenerateRequest
 )
 from app.utils.security import get_current_user
-# SWITCHED TO PREMIUM TEMPLATE GENERATOR FOR PROFESSIONAL QUALITY
+# NEW: Enhanced modernization service with component preservation
+from app.services.template_modernization_service import TemplateModernizationService
 from app.services.template_generator_premium import (
-    generate_templates_for_business,
-    TemplateGenerationError
+    TemplateGenerationError,
+    generate_templates_for_business
 )
 from app.services.template_generator import (
     delete_existing_templates
@@ -101,26 +102,29 @@ async def generate_templates(
             detail="Business not found"
         )
 
-    # Check if templates already exist
-    existing_count = db.query(Template).filter(
+    # Check if templates already exist - if so, delete them and regenerate
+    existing_templates = db.query(Template).filter(
         Template.business_id == business_id
-    ).count()
+    ).all()
 
-    if existing_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Templates already exist for this business. Use the regenerate endpoint to create new ones."
-        )
+    if len(existing_templates) > 0:
+        logger.info(f"[GENERATE] Found {len(existing_templates)} existing templates for business {business_id}, deleting them to generate fresh ones")
+        # Delete old templates
+        for template in existing_templates:
+            db.delete(template)
+        db.commit()
+        logger.info(f"[GENERATE] Deleted old templates, generating fresh ones with latest fixes")
 
     try:
-        # Generate templates
+        # Generate with PREMIUM ChatGPT generator (uses existing or new scraped data)
         templates = await generate_templates_for_business(
             business=business,
             db=db,
-            num_variants=request.num_variants
+            num_variants=1,
+            use_premium=True  # This will use ChatGPT MAXIMUM QUALITY mode
         )
 
-        logger.info(f"Generated {len(templates)} templates for business {business_id}")
+        logger.info(f"[CHATGPT] Generated {len(templates)} templates for business {business_id}")
 
         return TemplateListResponse(
             templates=[TemplateResponse.from_orm(t) for t in templates],
@@ -172,16 +176,25 @@ async def regenerate_templates(
 
     try:
         # Delete existing templates
-        await delete_existing_templates(business_id=business_id, db=db)
+        existing_templates = db.query(Template).filter(
+            Template.business_id == business_id
+        ).all()
 
-        # Generate new templates
+        for template in existing_templates:
+            db.delete(template)
+        db.commit()
+
+        logger.info(f"Deleted {len(existing_templates)} existing templates for regeneration")
+
+        # Regenerate with PREMIUM ChatGPT generator (uses existing scraped data)
         templates = await generate_templates_for_business(
             business=business,
             db=db,
-            num_variants=request.num_variants
+            num_variants=1,
+            use_premium=True  # This will use ChatGPT MAXIMUM QUALITY mode
         )
 
-        logger.info(f"Regenerated {len(templates)} templates for business {business_id}")
+        logger.info(f"[CHATGPT] Regenerated {len(templates)} templates for business {business_id}")
 
         return TemplateListResponse(
             templates=[TemplateResponse.from_orm(t) for t in templates],

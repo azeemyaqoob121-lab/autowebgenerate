@@ -196,6 +196,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
               <TemplatePreviewModal
                 businessId={business.id}
                 businessName={business.name}
+                businessScore={business.score ?? undefined}
                 onClose={() => setShowPreview(false)}
               />
             )}

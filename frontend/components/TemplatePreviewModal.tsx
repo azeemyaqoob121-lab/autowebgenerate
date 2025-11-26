@@ -8,12 +8,14 @@ import { Template } from '@/lib/types';
 interface TemplatePreviewModalProps {
   businessId: string;
   businessName: string;
+  businessScore?: number;
   onClose: () => void;
 }
 
 export default function TemplatePreviewModal({
   businessId,
   businessName,
+  businessScore,
   onClose,
 }: TemplatePreviewModalProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -65,6 +67,33 @@ export default function TemplatePreviewModal({
     }
   };
 
+  // Check if HTML content is corrupted (contains binary garbage)
+  const isHtmlCorrupted = (html: string | undefined): boolean => {
+    if (!html || html.length < 50) return false;
+
+    // Check for binary/control characters in first 500 chars
+    const preview = html.substring(0, 500);
+    const binaryPattern = /[\x01-\x08\x0E-\x1F\x7F-\x9F]/;
+
+    if (binaryPattern.test(preview)) {
+      console.error('[CORRUPTION DETECTED] Found binary characters in HTML');
+      return true;
+    }
+
+    // Check if HTML has basic structure
+    const htmlLower = html.toLowerCase();
+    const hasHtmlTag = htmlLower.includes('<html') || htmlLower.includes('<!doctype');
+    const hasBodyTag = htmlLower.includes('<body');
+
+    // If HTML is long but missing basic tags, it's likely corrupted
+    if (html.length > 200 && !hasHtmlTag && !hasBodyTag) {
+      console.error('[CORRUPTION DETECTED] HTML missing basic structure tags');
+      return true;
+    }
+
+    return false;
+  };
+
   const openInNewTab = () => {
     if (!selectedTemplate) return;
 
@@ -99,6 +128,32 @@ export default function TemplatePreviewModal({
 
   const renderTemplatePreview = () => {
     if (!selectedTemplate) return null;
+
+    // CRITICAL: Check for corruption before rendering
+    if (isHtmlCorrupted(selectedTemplate.html_content)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-4 p-6">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p className="text-lg font-medium text-gray-700">Corrupted Template Data Detected</p>
+          <p className="text-sm text-gray-500 text-center max-w-md">
+            The template contains corrupted data. This has been automatically detected and will be fixed on regeneration.
+          </p>
+          <button
+            onClick={generateTemplates}
+            className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Regenerate Clean Template
+          </button>
+        </div>
+      );
+    }
 
     // Check if html_content is already a complete HTML document
     const isCompleteHTML = selectedTemplate.html_content &&
@@ -171,8 +226,22 @@ export default function TemplatePreviewModal({
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="text-lg sm:text-xl">✨</span>
               </div>
-              <div className="min-w-0">
-                <h2 className="text-base sm:text-xl font-bold text-gray-900 truncate">AI Website Preview</h2>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-xl font-bold text-gray-900 truncate">AI Website Preview</h2>
+                  {businessScore !== undefined && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/80 rounded-full border border-purple-200">
+                      <span className="text-xs font-medium text-gray-600">Old Score:</span>
+                      <span className={`text-xs font-bold ${
+                        businessScore < 50 ? 'text-red-600' :
+                        businessScore < 70 ? 'text-orange-600' :
+                        'text-green-600'
+                      }`}>
+                        {businessScore}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs sm:text-sm text-gray-600 truncate">{businessName}</p>
               </div>
             </div>

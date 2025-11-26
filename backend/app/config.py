@@ -64,6 +64,20 @@ class Settings(BaseSettings):
         description="Google API key for PageSpeed Insights / Lighthouse API"
     )
 
+    # Gemini AI Configuration
+    GEMINI_API_KEY: Optional[str] = Field(
+        default=None,
+        description="Google Gemini API key for template generation"
+    )
+    USE_GEMINI_GENERATION: bool = Field(
+        default=False,
+        description="Use Gemini instead of ChatGPT for HTML generation"
+    )
+    GEMINI_MODEL: str = Field(
+        default="gemini-1.5-pro",
+        description="Gemini model to use: gemini-1.5-pro (best quality) or gemini-1.5-flash (faster)"
+    )
+
     # Premium Template Generation Configuration
     UNSPLASH_API_KEY: Optional[str] = Field(
         default=None,
@@ -84,6 +98,47 @@ class Settings(BaseSettings):
     ENABLE_VIDEO_BACKGROUNDS: bool = Field(
         default=True,
         description="Enable hero background video fetching from Pexels"
+    )
+
+    # ============================================================
+    # ChatGPT HTML Generation Configuration - MAXIMUM QUALITY MODE
+    # Budget: UNLIMITED - Focus on PERFECT quality!
+    # ============================================================
+    USE_CHATGPT_HTML_GENERATION: bool = Field(
+        default=True,
+        description="Use ChatGPT to generate brand-new modern HTML from scratch (vs old cloning approach)"
+    )
+    CHATGPT_HTML_GENERATION_MODEL: str = Field(
+        default="gpt-4-turbo-preview",
+        description="OpenAI model for HTML generation - use best available (gpt-4-turbo-preview recommended)"
+    )
+    CHATGPT_HTML_TEMPERATURE: float = Field(
+        default=0.9,
+        description="Creativity temperature for HTML generation (0.7-0.9 recommended, higher = more creative)"
+    )
+    CHATGPT_HTML_MAX_TOKENS: int = Field(
+        default=4096,
+        description="Maximum tokens for HTML generation (4096 = maximum for gpt-4-turbo-preview)"
+    )
+    CHATGPT_HTML_TOP_P: float = Field(
+        default=0.95,
+        description="Top-p sampling for HTML generation (0.95 = high diversity)"
+    )
+    CHATGPT_GENERATE_VARIANTS: int = Field(
+        default=3,
+        description="Number of design variants to generate in parallel (3 = gradient, glassmorphism, animation)"
+    )
+    CHATGPT_ENABLE_REFINEMENT: bool = Field(
+        default=True,
+        description="Enable AI refinement of best variant to make it PERFECT"
+    )
+    CHATGPT_ENABLE_AI_VALIDATION: bool = Field(
+        default=True,
+        description="Enable AI quality validation (GPT-4 scores each variant 0-100)"
+    )
+    CHATGPT_HTML_MIN_QUALITY_SCORE: int = Field(
+        default=90,
+        description="Minimum acceptable quality score (90/100 = excellent, 95/100 = perfect)"
     )
 
     # CORS Configuration
@@ -173,6 +228,7 @@ logger = logging.getLogger(__name__)
 logger.info(f"[CONFIG] Environment: {settings.ENVIRONMENT}")
 logger.info(f"[CONFIG] Debug mode: {settings.DEBUG}")
 logger.info(f"[CONFIG] OpenAI API Key: {settings.mask_secret(settings.OPENAI_API_KEY)}")
+logger.info(f"[CONFIG] Gemini API Key: {settings.mask_secret(settings.GEMINI_API_KEY)}")
 logger.info(f"[CONFIG] Google API Key: {settings.mask_secret(settings.GOOGLE_API_KEY)}")
 logger.info(f"[CONFIG] Unsplash API Key: {settings.mask_secret(settings.UNSPLASH_API_KEY)}")
 logger.info(f"[CONFIG] Pexels API Key: {settings.mask_secret(settings.PEXELS_API_KEY)}")

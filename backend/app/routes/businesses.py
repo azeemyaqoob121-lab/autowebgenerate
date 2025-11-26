@@ -369,13 +369,15 @@ async def discover_businesses(
                                 ).first()
 
                                 if not existing_templates:
+                                    # Generate with PREMIUM ChatGPT generator (uses existing or new scraped data)
                                     templates = await generate_templates_for_business(
                                         business=business,
                                         db=db,
-                                        num_variants=1
+                                        num_variants=1,
+                                        use_premium=True  # This will use ChatGPT MAXIMUM QUALITY mode
                                     )
                                     templates_generated_count += len(templates)
-                                    logger.info(f"Generated {len(templates)} AI template(s) for business '{business.name}'")
+                                    logger.info(f"[CHATGPT] Generated {len(templates)} templates for business '{business.name}'")
 
                             except Exception as e:
                                 logger.error(f"Failed to generate template for business {business.name}: {str(e)}")
