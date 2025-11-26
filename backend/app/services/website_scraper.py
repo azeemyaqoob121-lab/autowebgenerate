@@ -309,8 +309,46 @@ class WebsiteContentScraper:
 
         return items
 
+    def validate_image_url(self, url: str) -> bool:
+        """
+        Validate if an image URL is accessible and returns an image.
+
+        Args:
+            url: Image URL to validate
+
+        Returns:
+            True if image is accessible, False otherwise
+        """
+        try:
+            # Skip data URIs (they're always valid)
+            if url.startswith('data:image'):
+                return True
+
+            # Quick HEAD request to check if image exists
+            response = requests.head(
+                url,
+                headers={'User-Agent': 'Mozilla/5.0'},
+                timeout=5,
+                allow_redirects=True
+            )
+
+            # Check if successful (200-299) or permanent redirect (301)
+            if response.status_code in range(200, 400):
+                # Check if content-type is an image
+                content_type = response.headers.get('Content-Type', '').lower()
+                if 'image' in content_type or not content_type:
+                    # If no content-type or is an image, it's valid
+                    return True
+
+            logger.warning(f"Image validation failed: {url} (status: {response.status_code})")
+            return False
+
+        except Exception as e:
+            logger.warning(f"Image validation error for {url}: {str(e)}")
+            return False
+
     def extract_images(self) -> List[str]:
-        """Extract all meaningful images (excluding icons and tiny images)"""
+        """Extract all meaningful images (excluding icons and tiny images) with URL validation"""
         images = []
 
         try:
@@ -327,6 +365,16 @@ class WebsiteContentScraper:
                 # Get absolute URL
                 img_url = urljoin(self.url, src)
 
+                # Skip invalid URLs (data URIs without proper format, javascript:, etc.)
+                if not img_url.startswith(('http://', 'https://', 'data:image')):
+                    logger.warning(f"Skipping invalid URL: {img_url}")
+                    continue
+
+                # VALIDATE IMAGE URL BEFORE ADDING
+                if not self.validate_image_url(img_url):
+                    logger.warning(f"Skipping inaccessible image: {img_url}")
+                    continue
+
                 # Get alt text for context
                 alt_text = img.get('alt', '')
 
@@ -335,7 +383,7 @@ class WebsiteContentScraper:
                     'alt': alt_text[:200]
                 })
 
-            logger.info(f"Extracted {len(images)} images")
+            logger.info(f"Extracted and validated {len(images)} working images")
 
         except Exception as e:
             logger.error(f"Error extracting images: {str(e)}")
